@@ -3,7 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.136
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cache.Core.AOP", "Cache.Core.AOP\Cache.Core.AOP.csproj", "{5D8A4A33-E7AE-49A2-AA84-2DE68E89830A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cache.Core.AOP", "Cache.Core.AOP\Cache.Core.AOP.csproj", "{5D8A4A33-E7AE-49A2-AA84-2DE68E89830A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{0695430C-F9BF-4778-82C0-E1291D7C9AA5}"
+	ProjectSection(SolutionItems) = preProject
+		.releaserc.yml = .releaserc.yml
+		azure-pipelines.yml = azure-pipelines.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
