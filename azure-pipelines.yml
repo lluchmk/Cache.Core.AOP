@@ -1,0 +1,129 @@
+name: $(BuildDefinitionName)_$(Year:yyyy).$(Month).$(DayOfMonth)$(Rev:.r)
+
+trigger:
+  - master
+  - development
+
+variables:
+  buildConfiguration: Release
+
+jobs:
+- job: Build
+  pool:
+    vmImage: 'vs2017-win2016'
+  steps:
+  - script: set
+    displayName: 'Show variables'
+
+  - script: dotnet restore
+    displayName: 'Restore packages'
+
+  - script: dotnet build --configuration $(buildConfiguration) --no-restore
+    displayName: 'Build $(buildConfiguration)'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Test'
+    inputs:
+      command: test
+      projects: '**/*Tests/*.csproj'
+      arguments: '--configuration $(buildConfiguration)'
+      publishTestResults: true 
+
+  - powershell: |
+      echo "##vso[task.setvariable variable=teamProject;isOutput=true]$env:SYSTEM_TEAMPROJECT"
+      echo "##vso[task.setvariable variable=jobStatus;isOutput=true]$env:AGENT_JOBSTATUS"
+      echo "##vso[task.setvariable variable=collectionUri;isOutput=true]$env:SYSTEM_COLLECTIONURI"
+      echo "##vso[task.setvariable variable=buildId;isOutput=true]$env:BUILD_BUILDID"
+    name: setOutputVars
+
+- job: NotifyBuild
+  dependsOn: Build
+  pool: server
+  variables:
+    teamProject: $[ dependencies.Build.outputs['setOutputVars.teamProject'] ]
+    jobStatus: $[ dependencies.Build.outputs['setOutputVars.jobStatus'] ]
+    collectionUri: $[ dependencies.Build.outputs['setOutputVars.collectionUri'] ]
+    buildId: $[ dependencies.Build.outputs['setOutputVars.buildId'] ]
+    message: |
+      "New CI build on $(teamProject).
+      Status: $(jobStatus)
+      <$(collectionUri)/$(teamProject)/_build/results?buildId=$(buildId)&view=logs|Details>"
+  steps:
+  - task: InvokeRESTAPI@1
+    inputs:
+      connectionType: connectedServiceName
+      serviceConnection: SlackWebHook
+      method: POST
+      body: |
+        {
+          "text": $(message)
+        }
+
+- job: Pack
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'master'))
+  pool:
+    vmImage: 'vs2017-win2016'
+  steps:
+  - script: set
+    displayName: 'Show variables'
+
+  - script: >
+      npx -p semantic-release
+      -p @semantic-release/changelog
+      -p @semantic-release/git
+      -p @semantic-release/exec
+      semantic-release
+    env: { GH_TOKEN: $(GitHubToken)}
+    displayName: 'Semantic release'
+
+  - script: echo $(nextRelease)
+    displayName: 'Show next version'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Pack'
+    condition: succeeded()
+    inputs:
+      command: pack
+      packagesToPack: 'Cache.Core/Cache.Core.csproj'
+      versioningScheme: byEnvVar
+      versionEnvVar: nextRelease
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Store artifact'
+    condition: succeeded()
+    inputs:
+      artifactname: 'NuGetPackage'
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+
+  - powershell: |
+      echo "##vso[task.setvariable variable=teamProject;isOutput=true]$env:SYSTEM_TEAMPROJECT"
+      echo "##vso[task.setvariable variable=collectionUri;isOutput=true]$env:SYSTEM_COLLECTIONURI"
+      echo "##vso[task.setvariable variable=buildId;isOutput=true]$env:BUILD_BUILDID"
+      echo "##vso[task.setvariable variable=jobStatus;isOutput=true]$env:AGENT_JOBSTATUS"
+      echo "##vso[task.setvariable variable=versionNumber;isOutput=true]$(nextRelease)"
+    name: setOutputVars
+    
+- job: NotifyVersion
+  dependsOn: Pack
+  pool: server
+  variables:
+    teamProject: $[ dependencies.Pack.outputs['setOutputVars.teamProject'] ]
+    collectionUri: $[ dependencies.Pack.outputs['setOutputVars.collectionUri'] ]
+    buildId: $[ dependencies.Pack.outputs['setOutputVars.buildId'] ]
+    jobStatus: $[ dependencies.Pack.outputs['setOutputVars.jobStatus'] ]
+    versionNumber: $[ dependencies.Pack.outputs['setOutputVars.versionNumber'] ]
+    message: |
+      "New version on $(teamProject): $(versionNumber)
+      Status: $(jobStatus)
+      <$(collectionUri)/$(teamProject)/_build/results?buildId=$(buildId)&view=logs|Details>"
+  steps:
+  - task: InvokeRESTAPI@1
+    inputs:
+      connectionType: connectedServiceName
+      serviceConnection: SlackWebHook
+      method: POST
+      body: |
+        {
+          "text": $(message)
+        }

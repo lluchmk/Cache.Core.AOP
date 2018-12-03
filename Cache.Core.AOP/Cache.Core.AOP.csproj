@@ -2,6 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <PackageId>lluchmk.Cache.Core.AOP</PackageId>
+    <Authors>Kevin Lluch</Authors>
+    <Company>Kevin Lluch</Company>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="lluchmk.Cache.Core" Version="1.0.3" />
+    <PackageReference Include="lluchmk.Core.AOP" Version="1.0.3" />
+  </ItemGroup>
 
 </Project>
