@@ -85,7 +85,7 @@ jobs:
     condition: succeeded()
     inputs:
       command: pack
-      packagesToPack: 'Cache.Core.AOP/Cache.Core.AOP.csproj'
+      packagesToPack: '**/*.csproj'
       versioningScheme: byEnvVar
       versionEnvVar: nextRelease
 
