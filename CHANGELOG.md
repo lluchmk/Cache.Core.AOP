@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/lluchmk/Cache.Core.AOP/compare/v1.0.2...v1.1.0) (2019-01-28)
+
+
+### Features
+
+* Update piepeline to use semantic-release-ado instead of exec ([3fc089a](https://github.com/lluchmk/Cache.Core.AOP/commit/3fc089a))
+
 ## [1.0.2](https://github.com/lluchmk/Cache.Core.AOP/compare/v1.0.1...v1.0.2) (2018-12-03)
 
 
